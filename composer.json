@@ -6,8 +6,8 @@
     "keywords": ["envello", "email", "transactional-email", "api", "sdk"],
     "homepage": "https://envello.dev",
     "support": {
-        "source": "https://github.com/Aktai-ltd/envello-php",
-        "issues": "https://github.com/Aktai-ltd/envello-php/issues"
+        "source": "https://github.com/Bergblumestudio/envello-php",
+        "issues": "https://github.com/Bergblumestudio/envello-php/issues"
     },
     "require": {
         "php": ">=8.1",
