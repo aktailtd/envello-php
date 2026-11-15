@@ -57,7 +57,7 @@ response).
 This SDK is deliberately minimal (send + validate + status lookup via raw
 cURL, no dependencies beyond `ext-curl`/`ext-json`) rather than a full
 framework-integrated client — see the
-[Python SDK](https://github.com/Bergblumestudio/envello-python) for the
+[Python SDK](https://github.com/aktailtd/envello-python) for the
 fully-featured reference SDK.
 
 ## Development
