@@ -13,10 +13,16 @@ namespace Envello;
  */
 class Envello
 {
+    private const INSECURE_BASE_URL_MESSAGE = 'The API URL must use https (http is only allowed for localhost).';
+    private const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
     private string $apiKey;
     private string $baseUrl;
     private int $timeoutSeconds;
 
+    /**
+     * @throws EnvelloException If $baseUrl is not https (http is only allowed for localhost).
+     */
     public function __construct(
         string $apiKey,
         string $baseUrl = 'https://api.envello.dev',
@@ -25,9 +31,25 @@ class Envello
         if ($apiKey === '') {
             throw new \InvalidArgumentException('apiKey is required');
         }
+        self::assertSecureBaseUrl($baseUrl);
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->timeoutSeconds = $timeoutSeconds;
+    }
+
+    /** Refuse to send the API key over plain http to anything but loopback. */
+    private static function assertSecureBaseUrl(string $baseUrl): void
+    {
+        $parts = parse_url($baseUrl);
+        if ($parts === false || !isset($parts['scheme'], $parts['host']) || $parts['host'] === '') {
+            throw new EnvelloException(self::INSECURE_BASE_URL_MESSAGE);
+        }
+        // parse_url keeps IPv6 brackets ("[::1]") and the original case.
+        $scheme = strtolower($parts['scheme']);
+        $isLoopback = in_array(strtolower($parts['host']), self::LOOPBACK_HOSTS, true);
+        if ($scheme !== 'https' && !($scheme === 'http' && $isLoopback)) {
+            throw new EnvelloException(self::INSECURE_BASE_URL_MESSAGE);
+        }
     }
 
     /**
@@ -43,7 +65,7 @@ class Envello
      * @param array<int, array{filename?: string, contentType?: string, content?: string, url?: string}>|null $attachments
      *   Base64 attachments set `content`; remote attachments set `url` — don't set both on the same item.
      * @param string|null $sendAt ISO 8601 timestamp with a UTC offset, e.g. "2026-08-01T09:00:00+00:00". Omit to send immediately.
-     * @param string|null $idempotencyKey Sent as the `Idempotency-Key` header for safe retries.
+     * @param string|null $idempotencyKey Sent as the `Idempotency-Key` header for safe retries. Must not contain CR or LF.
      * @return array{id: string, status: string}
      * @throws EnvelloException
      */
@@ -63,6 +85,10 @@ class Envello
     ): array {
         if ($html === null && $text === null) {
             throw new \InvalidArgumentException('At least one of $html or $text is required');
+        }
+        // The key goes straight into a raw header line, so CR/LF would inject headers.
+        if ($idempotencyKey !== null && strpbrk($idempotencyKey, "\r\n") !== false) {
+            throw new EnvelloException('idempotencyKey must not contain CR or LF characters');
         }
 
         $payload = [

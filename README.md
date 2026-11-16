@@ -36,6 +36,9 @@ try {
 
 Override the base URL for local dev or a self-hosted deployment via the
 second constructor argument: `new Envello('env_test_xxx', 'http://localhost:3000')`.
+The base URL must use `https`. Plain `http` is only accepted for `localhost`,
+`127.0.0.1` and `[::1]`; anything else throws `EnvelloException` so the API key
+never goes out unencrypted.
 
 ## API surface
 
