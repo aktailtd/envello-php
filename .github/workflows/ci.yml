@@ -19,5 +19,6 @@ jobs:
       - run: composer validate --strict
       - run: php -l src/Envello.php
       - run: php -l src/EnvelloException.php
+      - run: php -l src/Webhook.php
       - run: composer install --no-interaction --no-progress
       - run: composer test
