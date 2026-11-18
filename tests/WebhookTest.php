@@ -32,6 +32,12 @@ final class WebhookTest extends TestCase
         $this->assertTrue(Webhook::verify(self::SECRET, self::BODY, self::header(self::SIGNATURE), 300, self::TIMESTAMP));
     }
 
+    public function testPartWithoutEqualsIsSkippedLikeTheServer(): void
+    {
+        $header = 't=' . self::TIMESTAMP . ',junk,v1=' . self::SIGNATURE;
+        $this->assertTrue(Webhook::verify(self::SECRET, self::BODY, $header, 300, self::TIMESTAMP));
+    }
+
     public function testRotationHeaderPassesForEitherSecret(): void
     {
         $header = self::header(self::OLD_SIGNATURE, self::SIGNATURE);

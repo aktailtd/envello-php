@@ -76,7 +76,8 @@ final class Webhook
         foreach (explode(',', $header) as $part) {
             $pair = explode('=', trim($part), 2);
             if (count($pair) !== 2) {
-                return null;
+                // Same as the API's own parser: a part without "=" is skipped, not fatal.
+                continue;
             }
             [$key, $value] = $pair;
 
