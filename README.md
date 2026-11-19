@@ -40,17 +40,49 @@ The base URL must use `https`. Plain `http` is only accepted for `localhost`,
 `127.0.0.1` and `[::1]`; anything else throws `EnvelloException` so the API key
 never goes out unencrypted.
 
+## Verifying webhooks
+
+Every webhook request carries an `Envello-Signature` header. Check it against
+the raw request body before trusting the payload:
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Envello\Webhook;
+
+$secret = (string) getenv('ENVELLO_WEBHOOK_SECRET'); // whsec_..., from the dashboard
+$rawBody = file_get_contents('php://input');
+$header = $_SERVER['HTTP_ENVELLO_SIGNATURE'] ?? null;
+
+if ($rawBody === false || !Webhook::verify($secret, $rawBody, $header)) {
+    http_response_code(400);
+    exit;
+}
+
+$event = json_decode($rawBody, true);
+http_response_code(200);
+```
+
+`Webhook::verify(string $secret, string $rawBody, ?string $header, int $toleranceSeconds = 300, ?int $now = null): bool`
+returns `false` for a bad signature, a timestamp more than `$toleranceSeconds`
+away from now (either direction), or a malformed or missing header. It never
+throws for bad input. Pass the body exactly as received: re-encoding parsed
+JSON changes the bytes and breaks the signature. During secret rotation the
+header carries one `v1` per active secret and any match passes.
+
 ## API surface
 
 - `new Envello(string $apiKey, string $baseUrl = 'https://api.envello.dev', int $timeoutSeconds = 10)`
-- `sendEmail(...)` — maps to `POST /emails`. Named arguments mirror the
+- `sendEmail(...)`: maps to `POST /emails`. Named arguments mirror the
   Envello API's send-email request shape; at least one of `html`/`text` is
   required (throws `InvalidArgumentException` otherwise, before any
   network call). Returns `['id' => ..., 'status' => ...]`.
-- `validateEmail(string $email)` — maps to `POST /emails/validate`, free on
+- `validateEmail(string $email)`: maps to `POST /emails/validate`, free on
   every plan. Returns `['email' => ..., 'valid' => ..., 'syntax_valid' => ...,
   'disposable' => ..., 'mx_found' => ..., 'reason' => ...]`.
-- `getEmail(string $id)` — maps to `GET /emails/{id}`.
+- `getEmail(string $id)`: maps to `GET /emails/{id}`.
 
 Non-2xx responses throw `Envello\EnvelloException`, with `getStatusCode()`,
 `getErrorCode()` (the API's machine-readable `error` field, e.g.
@@ -59,7 +91,7 @@ response).
 
 This SDK is deliberately minimal (send + validate + status lookup via raw
 cURL, no dependencies beyond `ext-curl`/`ext-json`) rather than a full
-framework-integrated client — see the
+framework-integrated client. See the
 [Python SDK](https://github.com/aktailtd/envello-python) for the
 fully-featured reference SDK.
 
@@ -69,4 +101,6 @@ fully-featured reference SDK.
 composer validate --strict
 php -l src/Envello.php
 php -l src/EnvelloException.php
+php -l src/Webhook.php
+composer install && composer test
 ```
