@@ -177,7 +177,7 @@ class Envello
             'Authorization: Bearer ' . $this->apiKey,
             'Content-Type: application/json',
             'Accept: application/json',
-            'User-Agent: envello-php/0.1.0',
+            'User-Agent: envello-php/0.2.0',
         ], $extraHeaders);
 
         curl_setopt_array($ch, [
